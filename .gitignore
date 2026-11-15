@@ -1,0 +1,6 @@
+# Your settings (from songo.conf.example)
+/songo.conf
+# Builds
+/out/
+# Work copies, caches, build stamps, the Wine prefix
+/.work/

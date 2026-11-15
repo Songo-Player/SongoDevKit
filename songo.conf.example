@@ -1,0 +1,32 @@
+# SongoDevKit settings. songo.sh copies this to songo.conf (not in git) the
+# first time; edit that one.
+
+# ---- Repos ----
+# Empty builds from the submodules in repos/. Point any of these at a local
+# checkout instead to build your work in progress, eg: SONGODOT_DIR=../Songodot
+# Relative paths are relative to this file.
+SONGO5_DIR=""
+SONGODOT_DIR=""
+SONGOBGPLAYER_DIR=""
+CHAI_RETROFIT_DIR=""
+
+# ---- Android signing (songo_build_release android) ----
+# The SDK, NDK and JDK are in the android Docker image; only the keys are yours.
+# Debug keystore: Godot's own by default, so APKs keep the signature earlier
+# builds had (Android won't update an app signed with a different key). If the
+# file doesn't exist, the devkit generates one in .work/android.
+ANDROID_DEBUG_KEYSTORE="$HOME/.local/share/godot/keystores/debug.keystore"
+ANDROID_DEBUG_KEYSTORE_USER="androiddebugkey"
+ANDROID_DEBUG_KEYSTORE_PASSWORD="android"
+# Release keystore, for Google Play. Empty signs release builds with the debug
+# keystore (fine for sideloading).
+ANDROID_RELEASE_KEYSTORE=""
+ANDROID_RELEASE_KEYSTORE_USER=""
+ANDROID_RELEASE_KEYSTORE_PASSWORD=""
+
+# ---- Build options ----
+# Parallel jobs, empty for all cores
+JOBS=""
+# Extra SCons arguments for the Linux editor (built in the linux-x86_64
+# image with clang; drop use_llvm=yes for gcc)
+SONGODOT_LINUX_EDITOR_ARGS="use_llvm=yes"

@@ -1,0 +1,12 @@
+[submodule "repos/Songo-5"]
+	path = repos/Songo-5
+	url = git@github.com:Songo-Player/Songo-5.git
+[submodule "repos/Songodot"]
+	path = repos/Songodot
+	url = git@github.com:Songo-Player/Songodot.git
+[submodule "repos/SongoBGPlayer"]
+	path = repos/SongoBGPlayer
+	url = git@github.com:Songo-Player/SongoBGPlayer.git
+[submodule "repos/chai_retrofit"]
+	path = repos/chai_retrofit
+	url = git@github.com:Songo-Player/chai_retrofit.git
