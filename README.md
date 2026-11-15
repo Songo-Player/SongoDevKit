@@ -112,3 +112,7 @@ out/                   results: release/, editor/, and components/ (each piece)
 ```
 
 The work copies take a few GB (each Songodot target keeps its own, since Godot regenerates headers per build profile).
+
+
+## AI Usage Disclosure (3 out of 5 🤖)
+I'm not the brightest with setting up cross compilation tooling so I leaned on claude a good bit for this, namely in the docker setup and windows export
