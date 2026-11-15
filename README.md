@@ -55,11 +55,33 @@ Each piece (an editor, an export template, an engine build) is fingerprinted by 
 | `songo_build_editor windows` | Windows editor, SongoBGPlayer Windows DLL |
 
 ### Building local checkouts
-By default everything builds from the submodules in `repos/`. To build your work in progress instead, point `songo.conf` at a local checkout, eg:
+By default everything builds from the submodules in `repos/`, which are the versions SongoDevKit has recorded. To build your work in progress instead, point `songo.conf` at your own checkouts of the repos. Each repo has its own setting:
+
+| Setting | Repo |
+|---|---|
+| `SONGO5_DIR` | Songo-5 |
+| `SONGODOT_DIR` | Songodot |
+| `SONGOBGPLAYER_DIR` | SongoBGPlayer |
+| `CHAI_RETROFIT_DIR` | chai_retrofit |
+
+For example, with the repos cloned next to SongoDevKit:
 
 ```
+SONGO5_DIR="../Songo-5"
 SONGODOT_DIR="../Songodot"
+SONGOBGPLAYER_DIR="../SongoBGPlayer"
+CHAI_RETROFIT_DIR="../chai_retrofit"
 ```
+
+- **Empty means the submodule.** Set only the repos you're working on and leave the rest empty to build their recorded versions, eg: just `SONGO5_DIR` to try app changes against the recorded engine.
+- **Paths** can be absolute, or relative to SongoDevKit's folder (where `songo.conf` is).
+- **What gets built:** the checkout as it is on disk: whatever branch it's on, with uncommitted changes and new untracked files. You don't need to commit to try a change.
+- **Checking:** `./songo.sh songo_status` shows which folder each repo builds from and the commit it's on. A setting that doesn't point at the right repo stops the build with an error naming it.
+- **SongoBGPlayer** needs its own submodules (FFmpeg, mbedtls) checked out: clone it with `--recursive`, or run `git submodule update --init --recursive` in it.
+- **Switching a setting** (to a checkout, back to the submodule, or to another branch) rebuilds only the pieces made from that repo, incrementally.
+- **Updating:** `songo_update` also pulls the checkouts set here.
+
+`songo.conf` isn't in git, so these settings stay on your machine. Edit `songo.conf.example` to change the defaults for everyone.
 
 Builds never write into the repos: each piece builds in its own copy under `.work/`, synced from the repo's sources before each build. The repo's own build products aren't copied, since they may come from a different toolchain; each copy keeps its own between builds, so they stay incremental. Songo-5 is exported from a staged copy too, which is where the devkit drops in the Android AAR and template paths it built.
 
