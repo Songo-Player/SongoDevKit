@@ -141,6 +141,7 @@ _songo_release_android() {
     songo_stage_songo5
     # SongoBGPlayer's AAR (with the music engine inside) and the Android
     # source template this devkit built
+    mkdir -p "$SONGO5_STAGE/addons/songo_player_harness/android"
     cp -f "$(songo_component_dir bgplayer-android)/songo_harness-release.aar" \
         "$SONGO5_STAGE/addons/songo_player_harness/android/songo_harness-release.aar"
     songo_set_preset_option Android gradle_build/android_source_template \
