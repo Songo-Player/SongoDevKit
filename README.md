@@ -27,6 +27,7 @@ The first run makes `songo.conf` from `songo.conf.example`. The only machine-spe
 
 ```
 ./songo.sh songo_build_release windows      # out/release/windows/Songo5-Setup.exe
+./songo.sh songo_build_release linux_x86    # out/release/linux_x86/Songo5-linux-x86_64.tar.gz
 ./songo.sh songo_build_release portmaster   # out/release/portmaster/songo5.zip
 ./songo.sh songo_build_release android      # out/release/android/songo5.apk
 ./songo.sh songo_build_editor linux_x86     # out/editor/linux_x86/
@@ -49,6 +50,7 @@ Each piece (an editor, an export template, an engine build) is fingerprinted by 
 | Command | Pieces it uses |
 |---|---|
 | `songo_build_release windows` | Linux editor (to export), Windows template, SongoBGPlayer Windows DLL |
+| `songo_build_release linux_x86` | Linux editor, Linux x86_64 template, SongoBGPlayer x86_64 engine + daemon |
 | `songo_build_release portmaster` | Linux editor, SBC arm64 template, SongoBGPlayer arm64 engine + daemon, chai_retrofit |
 | `songo_build_release android` | Linux editor, Android templates, SongoBGPlayer Android engine + AAR |
 | `songo_build_editor linux_x86` | Linux editor, SongoBGPlayer x86_64 engine + daemon |
@@ -88,7 +90,7 @@ Builds never write into the repos: each piece builds in its own copy under `.wor
 ## Where things come from
 
 - **Docker images** (`docker/`):
-  - `linux-x86_64`: Ubuntu 22.04 with clang, for Songodot's Linux editor and SongoBGPlayer's x86_64 build, and the PortMaster export. Its glibc (2.35) lets that editor run on most current distros and in the other images, which run it to export.
+  - `linux-x86_64`: Ubuntu 22.04 with clang, for Songodot's Linux editor and x86_64 template, SongoBGPlayer's x86_64 build, and the Linux and PortMaster exports. Its glibc (2.35) lets that editor run on most current distros and in the other images, which run it to export.
   - `linux-arm64`: Ubuntu 20.04 (glibc 2.29 binaries, for older CFWs) with clang 10 and the arm64 sysroot for Songodot's SBC template, and GCC 9 aarch64 for SongoBGPlayer
   - `windows`: Ubuntu 24.04 with MinGW-w64 (posix threads) for Songodot and SongoBGPlayer, plus ImageMagick, Wine (to run rcedit) and NSIS for the Windows export and installer
   - `android`: Ubuntu 22.04 with JDK 17, the SDK (platform 34, build-tools 34.0.0) and NDK r23c, for Songodot's Android templates, SongoBGPlayer's Android engine and AAR, and the Gradle export. Gradle's cache lives in `.work/gradle`. The image accepts the SDK license, so keep it local rather than pushing it to a public registry.
@@ -96,6 +98,7 @@ Builds never write into the repos: each piece builds in its own copy under `.wor
 - **`build_platforms/`:** each platform's packaging, run by `songo.sh` with the pieces it built:
   - `portmaster/`: the port's static files (`Songo5.sh`, `songo5/`) and `build_portmaster.sh`
   - `windows/`: `installer.nsi`, rcedit (`tools/`), and `build_windows.sh` (runs in the windows image)
+  - `linux_x86/`: `build_linux_x86.sh`, which exports the game and packs it with the engine and daemon into a tarball (runs in the linux-x86_64 image)
   - `android/`: `build_android.sh`, the Gradle export and its checks
 
 ## Layout

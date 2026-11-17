@@ -95,6 +95,36 @@ _songo_release_portmaster() {
         -- bash "$SONGO_DEVKIT_DIR/build_platforms/portmaster/build_portmaster.sh"
 }
 
+songo_release_linux_x86() {
+    songodot_editor_linuxbsd
+    songodot_template_linuxbsd
+    bgplayer_linux_x86_64
+    local out="$OUT_DIR/release/linux_x86/Songo5-linux-x86_64.tar.gz"
+    local fingerprint="songo5:$FP_SONGO5 editor:$(songo_stamp songodot-editor-linuxbsd)"
+    fingerprint+=" template:$(songo_stamp songodot-template-linuxbsd) bgplayer:$(songo_stamp bgplayer-linux-x86_64)"
+    fingerprint+=" platform:$(songo_dir_fingerprint build_platforms/linux_x86) docker:$(songo_dockerfile_hash linux-x86_64)"
+    songo_step release-linux-x86 "$fingerprint" "$out" -- _songo_release_linux_x86 "$out"
+}
+_songo_release_linux_x86() {
+    songo_stage_songo5
+    local bgplayer
+    bgplayer="$(songo_component_dir bgplayer-linux-x86_64)"
+    songo_docker linux-x86_64 \
+        -v "$SONGOBGPLAYER_DIR:$SONGOBGPLAYER_DIR:ro" \
+        -v "$SONGODOT_DIR:$SONGODOT_DIR:ro" \
+        -e GODOT="$(songodot_linux_editor_path)" \
+        -e PROJECT_DIR="$SONGO5_STAGE" \
+        -e BGPLAYER_DIR="$SONGOBGPLAYER_DIR" \
+        -e SONGODOT_DIR="$SONGODOT_DIR" \
+        -e TEMPLATE="$(songo_component_dir songodot-template-linuxbsd)/godot.linuxbsd.template_release.x86_64.llvm" \
+        -e ENGINE_LIB="$bgplayer/libsongo_engine.linux.x86_64.so" \
+        -e DAEMON="$bgplayer/songo_bgplayer.linux.x86_64" \
+        -e LICENSE_FILE="$SONGO_DEVKIT_DIR/build_platforms/portmaster/songo5/license/LICENSE.txt" \
+        -e ASSEMBLY="$WORK_DIR/linux_x86" \
+        -e OUT="$1" \
+        -- bash "$SONGO_DEVKIT_DIR/build_platforms/linux_x86/build_linux_x86.sh"
+}
+
 songo_release_windows() {
     songodot_editor_linuxbsd
     songodot_template_windows

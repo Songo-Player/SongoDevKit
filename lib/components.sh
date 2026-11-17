@@ -6,6 +6,7 @@
 #   songodot-editor-linuxbsd   Songodot Linux editor (linux-x86_64 image), also what exports
 #   songodot-editor-windows    Songodot Windows editor (windows image)
 #   songodot-template-sbc      Songodot SBC arm64 template (linux-arm64 image)
+#   songodot-template-linuxbsd Songodot Linux x86_64 template (linux-x86_64 image)
 #   songodot-template-windows  Songodot Windows template (windows image)
 #   songodot-template-android  Songodot Android templates + Gradle source (android image)
 #   bgplayer-linux-x86_64      SongoBGPlayer engine + daemon (linux-x86_64 image)
@@ -81,6 +82,20 @@ _songodot_template_sbc() {
         bash /devkit/lib/sync_build.sh /src /work songodot -- \
         scons profile=sbc_profile.py -j"$JOBS"
     _songo_collect "$work/src/bin" 'godot.sbc.template_release.arm64.llvm' songodot-template-sbc > /dev/null
+}
+
+songodot_template_linuxbsd() {
+    local name=songodot-template-linuxbsd
+    local fingerprint="$FP_SONGODOT docker:$(songo_dockerfile_hash linux-x86_64)"
+    songo_step "$name" "$fingerprint" "$(songo_component_dir "$name")/godot.linuxbsd.template_release.x86_64.llvm" -- _songodot_template_linuxbsd
+}
+_songodot_template_linuxbsd() {
+    local work="$WORK_DIR/songodot-linuxbsd-template"
+    mkdir -p "$work"
+    songo_docker linux-x86_64 -v "$SONGODOT_DIR:/src:ro" -v "$work:/work" -- \
+        bash /devkit/lib/sync_build.sh /src /work songodot -- \
+        scons profile=linux_profile.py -j"$JOBS"
+    _songo_collect "$work/src/bin" 'godot.linuxbsd.template_release.x86_64.llvm' songodot-template-linuxbsd > /dev/null
 }
 
 songodot_template_windows() {

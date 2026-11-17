@@ -11,7 +11,7 @@
 #   songo_build_release windows
 #
 # Commands:
-#   songo_build_release <windows|portmaster|android>   -> out/release/
+#   songo_build_release <windows|linux_x86|portmaster|android>  -> out/release/
 #   songo_build_editor <linux_x86|windows>             -> out/editor/
 #   songo_update                                       pull every repo to its latest pushed version
 #   songo_status                                       what's configured and built
@@ -56,9 +56,10 @@ _songo_build_release() {
     songo_compute_fingerprints
     case "${1:-}" in
         windows) songo_release_windows ;;
+        linux_x86) songo_release_linux_x86 ;;
         portmaster) songo_release_portmaster ;;
         android) songo_release_android ;;
-        *) songo_die "Usage: songo_build_release <windows|portmaster|android> [--force]" ;;
+        *) songo_die "Usage: songo_build_release <windows|linux_x86|portmaster|android> [--force]" ;;
     esac
     songo_log "Done in $((SECONDS - started))s: $(ls -d "$OUT_DIR/release/$1"/* | head -n1)"
 }
