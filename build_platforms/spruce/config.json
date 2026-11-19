@@ -1,0 +1,16 @@
+{
+  "label": "Songo#5",
+  "icon": "songo.png",
+  "launch": "launch.sh",
+  "description": "A music player",
+  "devices": [
+    "MIYOO_FLIP",
+    "TRIMUI_A133P",
+    "TRIMUI_SMART_PRO_S",
+    "GKD_PIXEL2",
+    "ANBERNIC_RGXX",
+    "OAKMOSS_A133P",
+    "DARKMOSS"
+  ],
+  "hideInSimpleMode": false
+}

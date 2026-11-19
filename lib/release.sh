@@ -95,6 +95,36 @@ _songo_release_portmaster() {
         -- bash "$SONGO_DEVKIT_DIR/build_platforms/portmaster/build_portmaster.sh"
 }
 
+# The PortMaster release's port, packaged as a spruce app folder (out/release/
+# spruce/Songo#5) instead of a zip
+songo_release_spruce() {
+    songodot_editor_linuxbsd
+    songodot_template_sbc
+    bgplayer_linux_arm64
+    local out="$OUT_DIR/release/spruce/Songo#5"
+    local fingerprint="songo5:$FP_SONGO5 chai:$FP_CHAI_RETROFIT editor:$(songo_stamp songodot-editor-linuxbsd)"
+    fingerprint+=" template:$(songo_stamp songodot-template-sbc) bgplayer:$(songo_stamp bgplayer-linux-arm64)"
+    fingerprint+=" platform:$(songo_dir_fingerprint build_platforms/portmaster) spruce:$(songo_dir_fingerprint build_platforms/spruce)"
+    fingerprint+=" docker:$(songo_dockerfile_hash linux-x86_64)"
+    songo_step release-spruce "$fingerprint" "$out/launch.sh" "$out/songo5/gamedata/Songo5.pck" -- _songo_release_spruce "$out"
+}
+_songo_release_spruce() {
+    songo_stage_songo5
+    local bgplayer
+    bgplayer="$(songo_component_dir bgplayer-linux-arm64)"
+    songo_docker linux-x86_64 \
+        -v "$CHAI_RETROFIT_DIR:$CHAI_RETROFIT_DIR:ro" \
+        -e GODOT="$(songodot_linux_editor_path)" \
+        -e PROJECT_DIR="$SONGO5_STAGE" \
+        -e RUNTIME="$(songo_component_dir songodot-template-sbc)/godot.sbc.template_release.arm64.llvm" \
+        -e ENGINE_LIB="$bgplayer/libsongo_engine.linux.arm64.so" \
+        -e DAEMON="$bgplayer/songo_bgplayer.linux.arm64" \
+        -e CHAI_DIR="$CHAI_RETROFIT_DIR" \
+        -e ASSEMBLY="$WORK_DIR/spruce" \
+        -e OUT="$1" \
+        -- bash "$SONGO_DEVKIT_DIR/build_platforms/spruce/build_spruce.sh"
+}
+
 songo_release_linux_x86() {
     songodot_editor_linuxbsd
     songodot_template_linuxbsd

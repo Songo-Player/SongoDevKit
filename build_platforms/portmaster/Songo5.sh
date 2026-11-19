@@ -50,7 +50,9 @@ source "${GAMEDIR}/runtime/set_cfw_strategy.sh"
 
 # CHAI: makes sure "chai" is a command, the CFW's own or the retrofit for it.
 # Godot (DeviceOS) uses it for brightness, battery and idle suppression.
+# CHAI_RETRO_DIR tells it where it is, which it can't work out itself outside bash.
 if [ -f "${GAMEDIR}/chai_retrofit/chai_entry.sh" ]; then
+	CHAI_RETRO_DIR="${GAMEDIR}/chai_retrofit"
 	source "${GAMEDIR}/chai_retrofit/chai_entry.sh"
 fi
 
