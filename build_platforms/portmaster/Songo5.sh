@@ -26,14 +26,8 @@ gptk_filename="songo5.gptk"
 # Logging
 > "$GAMEDIR/log.txt" && exec > >(tee "$GAMEDIR/log.txt") 2>&1
 
-# Check for ROCKNIX running with libMali driver.
 if [[ "$CFW_NAME" = "ROCKNIX" ]]; then
 	GODOT_OPTS=${GODOT_OPTS//-f/}
-    if ! glxinfo | grep "OpenGL version string"; then
-    pm_message "This Port does not support the libMali graphics driver. Switch to Panfrost to continue."
-    sleep 5
-    exit 1
-    fi
 fi
 
 echo "LOOKING FOR CFW_NAME ${CFW_NAME}"
@@ -90,7 +84,8 @@ export SDL_GAMECONTROLLERCONFIG="$sdl_controllerconfig"
 echo "XDG_DATA_HOME"
 echo $XDG_DATA_HOME
 
-# This is only used with Vulkan on KMSDRM 
+# On KMSDRM only: rotates touch input on GLES3 (the picture is left alone), and
+# both the picture and touch on Vulkan. Devices without touch are unaffected
 export SONGODOT_KMSDRM_ROTATION="270"
 
 
@@ -109,16 +104,10 @@ pm_platform_helper "$GAMEDIR/runtime/$runtime"
 
 
 
-# The RG Vita runs on Vulkan, where Forward+ takes ~11s to start and Mobile
-# ~3.5s. muOS names it RG-VITA-PRO, Knulli rg-vita-pro (knulli.board), older
-# PortMaster falls back to the devicetree model RG VITA. Everything else runs
 # Compatibility on GLES3, which the sbc runtime's "opengl3" driver creates.
 # Its "opengl3_es" sets up no GL context and segfaults
-case "$(echo "$DEVICE_NAME" | tr '[:upper:]' '[:lower:]')" in
-	*vita*) GODOT_OPTS="$GODOT_OPTS --rendering-method mobile" ;;
-	*) GODOT_OPTS="$GODOT_OPTS --rendering-method gl_compatibility --rendering-driver opengl3" ;;
-esac
- "$GAMEDIR/runtime/$runtime" $GODOT_OPTS --main-pack "gamedata/Songo5.pck" 
+GODOT_OPTS="$GODOT_OPTS --rendering-method gl_compatibility --rendering-driver opengl3"
+"$GAMEDIR/runtime/$runtime" $GODOT_OPTS --main-pack "gamedata/Songo5.pck"
 
 # Cleanup
 

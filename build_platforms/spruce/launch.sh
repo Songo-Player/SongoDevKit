@@ -87,16 +87,13 @@ echo "$XDG_DATA_HOME"
 
 export SONGO_DIR_TIP="On Spruce I suggest making a MUSIC folder in /mnt/SDCARD/"
 
-# This is only used with Vulkan on KMSDRM
+# On KMSDRM only: rotates touch input on GLES3 (the picture is left alone), and
+# both the picture and touch on Vulkan. Devices without touch are unaffected
 export SONGODOT_KMSDRM_ROTATION="270"
 
 # Compatibility on GLES3, which the sbc runtime's "opengl3" driver creates. Its
-# "opengl3_es" sets up no GL context and segfaults. The RG Vita runs on Vulkan,
-# where Mobile starts far faster than Forward+.
-case "$(echo "$DEVICE_NAME" | tr '[:upper:]' '[:lower:]')" in
-	*vita*) GODOT_OPTS="$GODOT_OPTS --rendering-method mobile" ;;
-	*) GODOT_OPTS="$GODOT_OPTS --rendering-method gl_compatibility --rendering-driver opengl3" ;;
-esac
+# "opengl3_es" sets up no GL context and segfaults.
+GODOT_OPTS="$GODOT_OPTS --rendering-method gl_compatibility --rendering-driver opengl3"
 "$GAMEDIR/runtime/$runtime" $GODOT_OPTS --main-pack "gamedata/$pck_filename"
 
 # Cleanup

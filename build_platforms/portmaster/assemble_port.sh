@@ -21,7 +21,12 @@
 #   runtime/libsongo_engine.linux.arm64.so, songo_bgplayer.linux.arm64
 #                         next to it, where SongoPlayerHarness looks
 #   chai_retrofit/        chai_retrofit, minus its git metadata
+#   songo_themes/<theme>  each theme in BUNDLED_THEMES, from the project's
+#                         theme_dev/themes_packaged/
 set -euo pipefail
+
+# Packaged themes shipped with the port
+BUNDLED_THEMES=(Spruce)
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PRESET="${PRESET:-Linux}"
@@ -29,6 +34,12 @@ PRESET="${PRESET:-Linux}"
 
 for f in "$GODOT" "$RUNTIME" "$ENGINE_LIB" "$DAEMON" "$LAUNCHER" "$CHAI_DIR/chai_entry.sh"; do
     [ -f "$f" ] || { echo "!! Missing $f" >&2; exit 1; }
+done
+for theme in "${BUNDLED_THEMES[@]}"; do
+    for f in theme.json theme.pck; do
+        [ -f "$PROJECT_DIR/theme_dev/themes_packaged/$theme/$f" ] \
+            || { echo "!! Missing $PROJECT_DIR/theme_dev/themes_packaged/$theme/$f" >&2; exit 1; }
+    done
 done
 
 # The runtime and .pck names the launcher uses
@@ -76,3 +87,14 @@ else
     echo ">> Adding chai_retrofit"
 fi
 rsync -a --exclude=.git "$CHAI_DIR/" "$PORT_DIR/chai_retrofit/"
+
+# Editor .import files are left out: the device only reads theme.json,
+# theme.pck, theme.tres and preview.png. Permissions are set explicitly, as
+# the packaged files' own can be anything (directories must stay listable)
+for theme in "${BUNDLED_THEMES[@]}"; do
+    echo ">> Adding theme $theme -> songo_themes/$theme"
+    mkdir -p "$PORT_DIR/songo_themes/$theme"
+    rsync -r --exclude='*.import' --chmod=D755,F644 \
+        "$PROJECT_DIR/theme_dev/themes_packaged/$theme/" "$PORT_DIR/songo_themes/$theme/"
+done
+chmod 755 "$PORT_DIR/songo_themes"
