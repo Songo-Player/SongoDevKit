@@ -33,6 +33,10 @@ echo "spruce platform: ${PLATFORM}"
 CONFDIR="$GAMEDIR/conf/"
 mkdir -p "${CONFDIR}"
 
+# songo_conf_set / songo_conf_default, for writing to songo.conf (which Songo
+# reads from beside its runtime)
+source "${GAMEDIR}/runtime/songo_conf.sh"
+
 # The strategy folder the controls runtime scripts use
 SONGO_CFW_NAME="Spruce"
 export SONGO_CFW_NAME
@@ -46,21 +50,24 @@ if [ -f "${GAMEDIR}/chai_retrofit/chai_entry.sh" ]; then
 fi
 
 # Volume indicator: chai runs the subscriber on every volume change, and it
-# passes the volume to Godot's listener. Off on twig.
+# passes the volume to Godot's listener, which Songo starts when songo.conf's
+# volume_tcp_server is 1. Off on twig. The subscriber is added every launch;
+# songo.conf only records the result on the first (see songo_conf.sh).
 SONGO_VOL_SUBSCRIBER="${GAMEDIR}/runtime/chai_volume_subscriber.sh"
-USE_SONGO_VOL_TCP_SERVER="0"
 if [ ! -f /mnt/SDCARD/spruce/twig ] && chai add-volume-subscriber "$SONGO_VOL_SUBSCRIBER" 2>/dev/null; then
-	USE_SONGO_VOL_TCP_SERVER="1"
+	songo_conf_set volume_tcp_server 1
+else
+	songo_conf_set volume_tcp_server 0
 fi
-export USE_SONGO_VOL_TCP_SERVER
 
 # Screen fades need a brightness chai can read back, otherwise Songo fades an
-# overlay instead
-case "$(chai get-brightness 2>/dev/null)" in
-	'' | *[!0-9]*) NO_BRIGHT_FADE_AVAILABLE="1" ;;
-	*) NO_BRIGHT_FADE_AVAILABLE="0" ;;
-esac
-export NO_BRIGHT_FADE_AVAILABLE
+# overlay instead (songo.conf's no_bright_fade_available, first launch only)
+if songo_conf_building; then
+	case "$(chai get-brightness 2>/dev/null)" in
+		'' | *[!0-9]*) songo_conf_set no_bright_fade_available 1 ;;
+		*) songo_conf_set no_bright_fade_available 0 ;;
+	esac
+fi
 
 # Find a music player left playing by "Quit with Music" for Songo to pick back
 # up, and set up the next one
@@ -68,6 +75,10 @@ source "${GAMEDIR}/runtime/background_play/setup_env.sh"
 
 # Set up controls
 source "${GAMEDIR}/runtime/controls/setup_env.sh"
+
+# songo.conf's values are all written: don't work them out again on later
+# launches (delete songo_configs_built to)
+songo_conf_mark_built
 
 cd "$GAMEDIR"
 

@@ -54,6 +54,66 @@ open(path, "w").write("\n".join(lines))
 PY
 }
 
+# Sets a top-level field of a named preset (export_filter, include_filter...),
+# rather than one of its [.options], in the staged export_presets.cfg
+songo_set_preset_field() { # <preset name> <key> <value>
+    python3 - "$SONGO5_STAGE/export_presets.cfg" "$1" "$2" "$3" <<'PY'
+import re, sys
+path, preset, key, value = sys.argv[1:]
+lines = open(path).read().split("\n")
+current = None
+in_preset = False
+for i, line in enumerate(lines):
+    if line.startswith("["):
+        m = re.match(r'^\[(preset\.\d+)\]$', line)
+        current = m.group(1) if m else None
+        in_preset = False
+    elif current and line == 'name="%s"' % preset:
+        in_preset = True
+    elif in_preset and line.startswith(key + "="):
+        lines[i] = '%s="%s"' % (key, value)
+        break
+else:
+    sys.exit("No export preset named %r with a field %s" % (preset, key))
+open(path, "w").write("\n".join(lines))
+PY
+}
+
+# Android only. An Android app has no folder beside it for songo_plugins, so
+# the APK carries the packaged plugins (every one in plugin_dev/plugins_packaged,
+# the same rule as assemble_port.sh) as plain files under bundled_plugins/,
+# with a manifest.json of each plugin.pck's SHA-256. Songo's PluginManager
+# copies them into user://external_plugins and loads them from there. They're
+# only added to the staged copy and the staged preset's include_filter, never
+# to the main pck: the repo's export_presets.cfg keeps plugin_dev/ excluded.
+songo_stage_android_plugins() {
+    local src="$SONGO5_STAGE/plugin_dev/plugins_packaged"
+    local dest="$SONGO5_STAGE/bundled_plugins"
+    rm -rf "$dest"
+    mkdir -p "$dest"
+    python3 - "$src" "$dest" <<'PY'
+import hashlib, json, os, shutil, sys
+src, dest = sys.argv[1:]
+plugins = {}
+for folder in sorted(os.listdir(src)) if os.path.isdir(src) else []:
+    plugin_dir = os.path.join(src, folder)
+    if not os.path.isdir(plugin_dir):
+        continue
+    for name in ("plugin.json", "plugin.pck"):
+        if not os.path.isfile(os.path.join(plugin_dir, name)):
+            sys.exit("!! Missing %s/%s/%s" % (src, folder, name))
+    os.makedirs(os.path.join(dest, folder))
+    for name in ("plugin.json", "plugin.pck"):
+        shutil.copyfile(os.path.join(plugin_dir, name), os.path.join(dest, folder, name))
+    with open(os.path.join(plugin_dir, "plugin.pck"), "rb") as f:
+        plugins[folder] = hashlib.sha256(f.read()).hexdigest()
+    print(">> Bundling plugin %s into the APK" % folder)
+with open(os.path.join(dest, "manifest.json"), "w") as f:
+    json.dump({"plugins": plugins}, f, indent="\t")
+PY
+    songo_set_preset_field Android include_filter "bundled_plugins/*"
+}
+
 # Songo's version from the staged project, eg: "v1.0.0 RC8"
 songo5_version() {
     sed -n 's/^const VERSION = "\(.*\)"$/\1/p' "$SONGO5_STAGE/data/songo_data.gd" | head -n1
@@ -199,6 +259,7 @@ songo_release_android() {
 }
 _songo_release_android() {
     songo_stage_songo5
+    songo_stage_android_plugins
     # SongoBGPlayer's AAR (with the music engine inside) and the Android
     # source template this devkit built
     mkdir -p "$SONGO5_STAGE/addons/songo_player_harness/android"

@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# Sourced by controls/setup_env.sh
-SONGO_CTRL_ACCEPT="JOY_BUTTON_B"
-SONGO_CTRL_BACK="JOY_BUTTON_A"
-SONGO_CTRL_SHUFFLE="JOY_BUTTON_Y"
-SONGO_CTRL_QUICK_MENU="JOY_BUTTON_X"
+# Sourced by controls/setup_env.sh. Fills in this CFW's default controls in
+# songo.conf, wherever it still says "default".
+songo_conf_default ctrl_accept JOY_BUTTON_B
+songo_conf_default ctrl_back JOY_BUTTON_A
+songo_conf_default ctrl_shuffle JOY_BUTTON_Y
+songo_conf_default ctrl_quick_menu JOY_BUTTON_X

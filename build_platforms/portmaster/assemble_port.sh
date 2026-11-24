@@ -21,12 +21,15 @@
 #   runtime/libsongo_engine.linux.arm64.so, songo_bgplayer.linux.arm64
 #                         next to it, where SongoPlayerHarness looks
 #   chai_retrofit/        chai_retrofit, minus its git metadata
-#   songo_themes/<theme>  each theme in BUNDLED_THEMES, from the project's
-#                         theme_dev/themes_packaged/
+#   songo_plugins/<name>  every plugin in the project's
+#                         plugin_dev/plugins_packaged/ (its plugin.json and
+#                         plugin.pck), with no list to keep up: packaging a
+#                         plugin with plugin_packer.gd is enough to ship it.
+#                         Songo starts every plugin disabled until it's enabled.
+#
+# No external themes are bundled here: PortMaster ships Songo's internal themes
+# only. The spruce build adds the Spruce theme itself (build_spruce.sh).
 set -euo pipefail
-
-# Packaged themes shipped with the port
-BUNDLED_THEMES=(Spruce)
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PRESET="${PRESET:-Linux}"
@@ -35,12 +38,21 @@ PRESET="${PRESET:-Linux}"
 for f in "$GODOT" "$RUNTIME" "$ENGINE_LIB" "$DAEMON" "$LAUNCHER" "$CHAI_DIR/chai_entry.sh"; do
     [ -f "$f" ] || { echo "!! Missing $f" >&2; exit 1; }
 done
-for theme in "${BUNDLED_THEMES[@]}"; do
-    for f in theme.json theme.pck; do
-        [ -f "$PROJECT_DIR/theme_dev/themes_packaged/$theme/$f" ] \
-            || { echo "!! Missing $PROJECT_DIR/theme_dev/themes_packaged/$theme/$f" >&2; exit 1; }
+
+# Every packaged plugin ships. A folder that's missing either file is a
+# half-packaged plugin, which would fail to load on the device, so stop.
+PLUGINS_DIR="$PROJECT_DIR/plugin_dev/plugins_packaged"
+PLUGINS=()
+if [ -d "$PLUGINS_DIR" ]; then
+    for plugin_dir in "$PLUGINS_DIR"/*/; do
+        [ -d "$plugin_dir" ] || continue
+        plugin="$(basename "$plugin_dir")"
+        for f in plugin.json plugin.pck; do
+            [ -f "$plugin_dir/$f" ] || { echo "!! Missing $PLUGINS_DIR/$plugin/$f" >&2; exit 1; }
+        done
+        PLUGINS+=("$plugin")
     done
-done
+fi
 
 # The runtime and .pck names the launcher uses
 RUNTIME_NAME="$(sed -n 's/^runtime="\(.*\)"$/\1/p' "$LAUNCHER" | head -n1)"
@@ -60,9 +72,11 @@ done
 echo ">> Assembling the port in $PORT_DIR"
 rm -rf "$PORT_DIR"
 mkdir -p "$(dirname "$PORT_DIR")"
-# Device-side files (log.txt, conf/) are left out in case they were copied
-# back off a device
-rsync -a --exclude=/log.txt --exclude=/conf --exclude=.git "$SCRIPT_DIR/songo5/" "$PORT_DIR/"
+# Device-side files (log.txt, conf/, songo_configs_built) are left out in case
+# they were copied back off a device: shipping songo_configs_built would skip
+# the launcher's first-launch songo.conf setup
+rsync -a --exclude=/log.txt --exclude=/conf --exclude=/songo_configs_built --exclude=.git \
+    "$SCRIPT_DIR/songo5/" "$PORT_DIR/"
 mkdir -p "$PORT_DIR/gamedata" "$PORT_DIR/runtime"
 
 echo ">> Exporting preset '$PRESET' -> gamedata/$PCK_NAME"
@@ -88,13 +102,17 @@ else
 fi
 rsync -a --exclude=.git "$CHAI_DIR/" "$PORT_DIR/chai_retrofit/"
 
-# Editor .import files are left out: the device only reads theme.json,
-# theme.pck, theme.tres and preview.png. Permissions are set explicitly, as
-# the packaged files' own can be anything (directories must stay listable)
-for theme in "${BUNDLED_THEMES[@]}"; do
-    echo ">> Adding theme $theme -> songo_themes/$theme"
-    mkdir -p "$PORT_DIR/songo_themes/$theme"
-    rsync -r --exclude='*.import' --chmod=D755,F644 \
-        "$PROJECT_DIR/theme_dev/themes_packaged/$theme/" "$PORT_DIR/songo_themes/$theme/"
+# Only plugin.json and plugin.pck: that's all PluginManager reads. Permissions
+# are set explicitly, as the packaged files' own can be anything (directories
+# must stay listable)
+if [ "${#PLUGINS[@]}" -eq 0 ]; then
+    echo ">> No packaged plugins in $PLUGINS_DIR"
+fi
+for plugin in "${PLUGINS[@]}"; do
+    echo ">> Adding plugin $plugin -> songo_plugins/$plugin"
+    install -d -m 755 "$PORT_DIR/songo_plugins/$plugin"
+    install -m 644 "$PLUGINS_DIR/$plugin/plugin.json" "$PLUGINS_DIR/$plugin/plugin.pck" \
+        "$PORT_DIR/songo_plugins/$plugin/"
 done
-chmod 755 "$PORT_DIR/songo_themes"
+[ -d "$PORT_DIR/songo_plugins" ] && chmod 755 "$PORT_DIR/songo_plugins"
+true
