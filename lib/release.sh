@@ -111,7 +111,7 @@ for folder in sorted(os.listdir(src)) if os.path.isdir(src) else []:
 with open(os.path.join(dest, "manifest.json"), "w") as f:
     json.dump({"plugins": plugins}, f, indent="\t")
 PY
-    songo_set_preset_field Android include_filter "bundled_plugins/*"
+    songo_set_preset_field Android include_filter "bundled_plugins/*,third_party_licenses/*"
 }
 
 # Songo's version from the staged project, eg: "v1.0.0 RC8"
@@ -128,6 +128,23 @@ songo5_icon() {
 
 # ---- Releases ----
 
+# Where a release's source code is and the commits it's built from, for the
+# release's SOURCES.txt. "-dirty" means uncommitted changes were built, which
+# should be committed and pushed before the release is published.
+songo_release_sources() {
+    local entry dir name
+    for entry in "Songo-5:$SONGO5_DIR" "Songodot:$SONGODOT_DIR" "SongoBGPlayer:$SONGOBGPLAYER_DIR" \
+        "chai_retrofit:$CHAI_RETROFIT_DIR" "SongoDevKit:$SONGO_DEVKIT_DIR"; do
+        name="${entry%%:*}"
+        dir="${entry#*:}"
+        echo "$name: https://github.com/Songo-Player/$name ($(git -C "$dir" describe --always --dirty --abbrev=40 --exclude='*' 2>/dev/null || echo unversioned))"
+    done
+    echo "Songo-5-Themes: https://github.com/Songo-Player/Songo-5-Themes ($(git -C "$SONGO5_DIR/theme_dev" rev-parse HEAD 2>/dev/null || echo unversioned))"
+    echo "TagLib: https://github.com/taglib/taglib (3c917caf52b6d14bfb548d4dc27d8601815edbe2, in Songodot's thirdparty/taglib)"
+    echo "FFmpeg: https://github.com/FFmpeg/FFmpeg (n8.1.2, a submodule of SongoBGPlayer)"
+    echo "Mbed TLS: https://github.com/Mbed-TLS/mbedtls (v3.6.7, a submodule of SongoBGPlayer)"
+}
+
 songo_release_portmaster() {
     songodot_editor_linuxbsd
     songodot_template_sbc
@@ -135,7 +152,7 @@ songo_release_portmaster() {
     local out="$OUT_DIR/release/portmaster/songo5.zip"
     local fingerprint="songo5:$FP_SONGO5 chai:$FP_CHAI_RETROFIT editor:$(songo_stamp songodot-editor-linuxbsd)"
     fingerprint+=" template:$(songo_stamp songodot-template-sbc) bgplayer:$(songo_stamp bgplayer-linux-arm64)"
-    fingerprint+=" platform:$(songo_dir_fingerprint build_platforms/portmaster) docker:$(songo_dockerfile_hash linux-x86_64)"
+    fingerprint+=" platform:$(songo_dir_fingerprint build_platforms/portmaster) licenses:$(songo_dir_fingerprint build_platforms/licenses) docker:$(songo_dockerfile_hash linux-x86_64)"
     songo_step release-portmaster "$fingerprint" "$out" -- _songo_release_portmaster "$out"
 }
 _songo_release_portmaster() {
@@ -144,6 +161,11 @@ _songo_release_portmaster() {
     bgplayer="$(songo_component_dir bgplayer-linux-arm64)"
     songo_docker linux-x86_64 \
         -v "$CHAI_RETROFIT_DIR:$CHAI_RETROFIT_DIR:ro" \
+        -v "$SONGOBGPLAYER_DIR:$SONGOBGPLAYER_DIR:ro" \
+        -v "$SONGODOT_DIR:$SONGODOT_DIR:ro" \
+        -e BGPLAYER_DIR="$SONGOBGPLAYER_DIR" \
+        -e SONGODOT_DIR="$SONGODOT_DIR" \
+        -e SOURCES="$(songo_release_sources)" \
         -e GODOT="$(songodot_linux_editor_path)" \
         -e PROJECT_DIR="$SONGO5_STAGE" \
         -e RUNTIME="$(songo_component_dir songodot-template-sbc)/godot.sbc.template_release.arm64.llvm" \
@@ -164,7 +186,7 @@ songo_release_spruce() {
     local out="$OUT_DIR/release/spruce/Songo#5"
     local fingerprint="songo5:$FP_SONGO5 chai:$FP_CHAI_RETROFIT editor:$(songo_stamp songodot-editor-linuxbsd)"
     fingerprint+=" template:$(songo_stamp songodot-template-sbc) bgplayer:$(songo_stamp bgplayer-linux-arm64)"
-    fingerprint+=" platform:$(songo_dir_fingerprint build_platforms/portmaster) spruce:$(songo_dir_fingerprint build_platforms/spruce)"
+    fingerprint+=" platform:$(songo_dir_fingerprint build_platforms/portmaster) licenses:$(songo_dir_fingerprint build_platforms/licenses) spruce:$(songo_dir_fingerprint build_platforms/spruce)"
     fingerprint+=" docker:$(songo_dockerfile_hash linux-x86_64)"
     songo_step release-spruce "$fingerprint" "$out/launch.sh" "$out/songo5/gamedata/Songo5.pck" -- _songo_release_spruce "$out"
 }
@@ -174,6 +196,11 @@ _songo_release_spruce() {
     bgplayer="$(songo_component_dir bgplayer-linux-arm64)"
     songo_docker linux-x86_64 \
         -v "$CHAI_RETROFIT_DIR:$CHAI_RETROFIT_DIR:ro" \
+        -v "$SONGOBGPLAYER_DIR:$SONGOBGPLAYER_DIR:ro" \
+        -v "$SONGODOT_DIR:$SONGODOT_DIR:ro" \
+        -e BGPLAYER_DIR="$SONGOBGPLAYER_DIR" \
+        -e SONGODOT_DIR="$SONGODOT_DIR" \
+        -e SOURCES="$(songo_release_sources)" \
         -e GODOT="$(songodot_linux_editor_path)" \
         -e PROJECT_DIR="$SONGO5_STAGE" \
         -e RUNTIME="$(songo_component_dir songodot-template-sbc)/godot.sbc.template_release.arm64.llvm" \
@@ -192,7 +219,7 @@ songo_release_linux_x86() {
     local out="$OUT_DIR/release/linux_x86/Songo5-linux-x86_64.tar.gz"
     local fingerprint="songo5:$FP_SONGO5 editor:$(songo_stamp songodot-editor-linuxbsd)"
     fingerprint+=" template:$(songo_stamp songodot-template-linuxbsd) bgplayer:$(songo_stamp bgplayer-linux-x86_64)"
-    fingerprint+=" platform:$(songo_dir_fingerprint build_platforms/linux_x86) docker:$(songo_dockerfile_hash linux-x86_64)"
+    fingerprint+=" platform:$(songo_dir_fingerprint build_platforms/linux_x86) licenses:$(songo_dir_fingerprint build_platforms/licenses) docker:$(songo_dockerfile_hash linux-x86_64)"
     songo_step release-linux-x86 "$fingerprint" "$out" -- _songo_release_linux_x86 "$out"
 }
 _songo_release_linux_x86() {
@@ -206,6 +233,7 @@ _songo_release_linux_x86() {
         -e PROJECT_DIR="$SONGO5_STAGE" \
         -e BGPLAYER_DIR="$SONGOBGPLAYER_DIR" \
         -e SONGODOT_DIR="$SONGODOT_DIR" \
+        -e SOURCES="$(songo_release_sources)" \
         -e TEMPLATE="$(songo_component_dir songodot-template-linuxbsd)/godot.linuxbsd.template_release.x86_64.llvm" \
         -e ENGINE_LIB="$bgplayer/libsongo_engine.linux.x86_64.so" \
         -e DAEMON="$bgplayer/songo_bgplayer.linux.x86_64" \
@@ -222,7 +250,7 @@ songo_release_windows() {
     local out="$OUT_DIR/release/windows/Songo5-Setup.exe"
     local fingerprint="songo5:$FP_SONGO5 editor:$(songo_stamp songodot-editor-linuxbsd)"
     fingerprint+=" template:$(songo_stamp songodot-template-windows) bgplayer:$(songo_stamp bgplayer-windows)"
-    fingerprint+=" platform:$(songo_dir_fingerprint build_platforms/windows) docker:$(songo_dockerfile_hash windows)"
+    fingerprint+=" platform:$(songo_dir_fingerprint build_platforms/windows) licenses:$(songo_dir_fingerprint build_platforms/licenses) docker:$(songo_dockerfile_hash windows)"
     songo_step release-windows "$fingerprint" "$out" -- _songo_release_windows "$out"
 }
 _songo_release_windows() {
@@ -235,6 +263,12 @@ _songo_release_windows() {
     [ -f "$work/Songo5.pck" ] || songo_die "Export didn't produce $work/Songo5.pck"
     songo_log "Packaging the installer (windows image)"
     songo_docker windows \
+        -v "$SONGOBGPLAYER_DIR:$SONGOBGPLAYER_DIR:ro" \
+        -v "$SONGODOT_DIR:$SONGODOT_DIR:ro" \
+        -e PROJECT_DIR="$SONGO5_STAGE" \
+        -e BGPLAYER_DIR="$SONGOBGPLAYER_DIR" \
+        -e SONGODOT_DIR="$SONGODOT_DIR" \
+        -e SOURCES="$(songo_release_sources)" \
         -e TEMPLATE="$(songo_component_dir songodot-template-windows)/godot.windows.template_release.x86_64.exe" \
         -e PCK="$work/Songo5.pck" \
         -e ENGINE_DLL="$(songo_component_dir bgplayer-windows)/libsongo_engine.windows.x86_64.dll" \
@@ -254,12 +288,18 @@ songo_release_android() {
     local out="$OUT_DIR/release/android/songo5.apk"
     local fingerprint="songo5:$FP_SONGO5 editor:$(songo_stamp songodot-editor-linuxbsd)"
     fingerprint+=" template:$(songo_stamp songodot-template-android) bgplayer:$(songo_stamp bgplayer-android)"
-    fingerprint+=" platform:$(songo_dir_fingerprint build_platforms/android) docker:$(songo_dockerfile_hash android)"
+    fingerprint+=" platform:$(songo_dir_fingerprint build_platforms/android) licenses:$(songo_dir_fingerprint build_platforms/licenses) docker:$(songo_dockerfile_hash android)"
     songo_step release-android "$fingerprint" "$out" -- _songo_release_android "$out"
 }
 _songo_release_android() {
     songo_stage_songo5
     songo_stage_android_plugins
+    # Everything's licenses, as plain files in the APK's assets (the Android
+    # preset's include_filter has them, see songo_stage_android_plugins)
+    local licenses="$SONGO5_STAGE/third_party_licenses"
+    PROJECT_DIR="$SONGO5_STAGE" BGPLAYER_DIR="$SONGOBGPLAYER_DIR" SONGODOT_DIR="$SONGODOT_DIR" SOURCES="$(songo_release_sources)" \
+        bash "$SONGO_DEVKIT_DIR/build_platforms/licenses/add_licenses.sh" "$licenses" LICENSE.txt android.md
+    cp -f "$SONGO_DEVKIT_DIR/build_platforms/portmaster/songo5/license/LICENSE.txt" "$licenses/LICENSE.txt"
     # SongoBGPlayer's AAR (with the music engine inside) and the Android
     # source template this devkit built
     mkdir -p "$SONGO5_STAGE/addons/songo_player_harness/android"

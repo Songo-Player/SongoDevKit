@@ -9,10 +9,15 @@
 #   ENGINE_LIB   SongoBGPlayer libsongo_engine.linux.arm64.so
 #   DAEMON       SongoBGPlayer songo_bgplayer.linux.arm64
 #   CHAI_DIR     chai_retrofit, copied into the port
+#   BGPLAYER_DIR, SONGODOT_DIR  SongoBGPlayer and Songodot, for their license
+#                files and those of the libraries in them
+#   SOURCES      the source repos and commits built from, one per line
 #   LAUNCHER     the launch script that runs this port, which names the
 #                runtime and .pck (runtime="..." and pck_filename="...")
 #   PORT_DIR     where to assemble songo5/ (replaced)
 #   PRESET       optional, the export preset (default "Linux")
+#   EXCLUDE_PLUGINS  optional, space-separated folder names of packaged plugins
+#                to leave out
 #
 # songo5/ next to this script holds the port's static files. The assembled
 # port adds:
@@ -21,11 +26,14 @@
 #   runtime/libsongo_engine.linux.arm64.so, songo_bgplayer.linux.arm64
 #                         next to it, where SongoPlayerHarness looks
 #   chai_retrofit/        chai_retrofit, minus its git metadata
+#   license/              next to the static LICENSE.txt, everything's licenses
+#                         (../licenses/add_licenses.sh)
 #   songo_plugins/<name>  every plugin in the project's
 #                         plugin_dev/plugins_packaged/ (its plugin.json and
 #                         plugin.pck), with no list to keep up: packaging a
 #                         plugin with plugin_packer.gd is enough to ship it.
-#                         Songo starts every plugin disabled until it's enabled.
+#                         EXCLUDE_PLUGINS leaves some out. Songo starts
+#                         every plugin disabled until it's enabled.
 #
 # No external themes are bundled here: PortMaster ships Songo's internal themes
 # only. The spruce build adds the Spruce theme itself (build_spruce.sh).
@@ -33,13 +41,14 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PRESET="${PRESET:-Linux}"
+: "${BGPLAYER_DIR:?}" "${SONGODOT_DIR:?}" "${SOURCES:?}"
 : "${GODOT:?}" "${PROJECT_DIR:?}" "${RUNTIME:?}" "${ENGINE_LIB:?}" "${DAEMON:?}" "${CHAI_DIR:?}" "${LAUNCHER:?}" "${PORT_DIR:?}"
 
 for f in "$GODOT" "$RUNTIME" "$ENGINE_LIB" "$DAEMON" "$LAUNCHER" "$CHAI_DIR/chai_entry.sh"; do
     [ -f "$f" ] || { echo "!! Missing $f" >&2; exit 1; }
 done
 
-# Every packaged plugin ships. A folder that's missing either file is a
+# Every packaged plugin ships, except EXCLUDE_PLUGINS. A folder that's missing either file is a
 # half-packaged plugin, which would fail to load on the device, so stop.
 PLUGINS_DIR="$PROJECT_DIR/plugin_dev/plugins_packaged"
 PLUGINS=()
@@ -47,6 +56,10 @@ if [ -d "$PLUGINS_DIR" ]; then
     for plugin_dir in "$PLUGINS_DIR"/*/; do
         [ -d "$plugin_dir" ] || continue
         plugin="$(basename "$plugin_dir")"
+        if [[ " ${EXCLUDE_PLUGINS:-} " == *" $plugin "* ]]; then
+            echo ">> Leaving out plugin $plugin"
+            continue
+        fi
         for f in plugin.json plugin.pck; do
             [ -f "$plugin_dir/$f" ] || { echo "!! Missing $PLUGINS_DIR/$plugin/$f" >&2; exit 1; }
         done
@@ -79,6 +92,8 @@ rsync -a --exclude=/log.txt --exclude=/conf --exclude=/songo_configs_built --exc
     "$SCRIPT_DIR/songo5/" "$PORT_DIR/"
 mkdir -p "$PORT_DIR/gamedata" "$PORT_DIR/runtime"
 
+bash "$SCRIPT_DIR/../licenses/add_licenses.sh" "$PORT_DIR/license" LICENSE.txt handheld.md
+
 echo ">> Exporting preset '$PRESET' -> gamedata/$PCK_NAME"
 STARTED="$PORT_DIR/.started"
 touch "$STARTED"
@@ -106,7 +121,7 @@ rsync -a --exclude=.git "$CHAI_DIR/" "$PORT_DIR/chai_retrofit/"
 # are set explicitly, as the packaged files' own can be anything (directories
 # must stay listable)
 if [ "${#PLUGINS[@]}" -eq 0 ]; then
-    echo ">> No packaged plugins in $PLUGINS_DIR"
+    echo ">> No packaged plugins to add from $PLUGINS_DIR"
 fi
 for plugin in "${PLUGINS[@]}"; do
     echo ">> Adding plugin $plugin -> songo_plugins/$plugin"

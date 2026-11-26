@@ -3,7 +3,8 @@
 # /mnt/SDCARD/App/Songo#5. Not zipped. Run by songo.sh (songo_build_release
 # spruce), which builds the inputs and passes them in:
 #
-#   GODOT, PROJECT_DIR, RUNTIME, ENGINE_LIB, DAEMON, CHAI_DIR, PRESET
+#   GODOT, PROJECT_DIR, RUNTIME, ENGINE_LIB, DAEMON, CHAI_DIR, PRESET,
+#   BGPLAYER_DIR, SONGODOT_DIR, SOURCES
 #                as for the PortMaster release (see assemble_port.sh)
 #   ASSEMBLY     a scratch directory to assemble the app in
 #   OUT          the Songo#5 folder to write (replaced)
@@ -28,6 +29,8 @@ PORTMASTER_DIR="$SCRIPT_DIR/../portmaster"
 # Checked before the (slower) assembly, so a missing theme fails fast
 THEMES_DIR="$PROJECT_DIR/theme_dev/themes_packaged"
 for theme in "${SPRUCE_THEMES[@]}"; do
+    credits="$PROJECT_DIR/theme_dev/themes_raw/$theme/CREDITS.md"
+    [ -f "$credits" ] || { echo "!! Missing $credits" >&2; exit 1; }
     for f in theme.json theme.pck; do
         [ -f "$THEMES_DIR/$theme/$f" ] || { echo "!! Missing $THEMES_DIR/$theme/$f" >&2; exit 1; }
     done
@@ -46,6 +49,11 @@ for theme in "${SPRUCE_THEMES[@]}"; do
     mkdir -p "$APP_DIR/songo5/songo_themes/$theme"
     rsync -r --exclude='*.import' --chmod=D755,F644 \
         "$THEMES_DIR/$theme/" "$APP_DIR/songo5/songo_themes/$theme/"
+    # The theme's credits, and the licenses they point to in assets/
+    raw="$PROJECT_DIR/theme_dev/themes_raw/$theme"
+    rsync -r --prune-empty-dirs --chmod=D755,F644 --include='/CREDITS.md' --include='/assets/' \
+        --include='/assets/*-OFL.txt' --include='/assets/*-LICENSE.txt' --exclude='*' \
+        "$raw/" "$APP_DIR/songo5/songo_themes/$theme/"
 done
 chmod 755 "$APP_DIR/songo5/songo_themes"
 

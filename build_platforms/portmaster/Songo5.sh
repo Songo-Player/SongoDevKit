@@ -118,7 +118,10 @@ pm_platform_helper "$GAMEDIR/runtime/$runtime"
 # Compatibility on GLES3, which the sbc runtime's "opengl3" driver creates.
 # Its "opengl3_es" sets up no GL context and segfaults
 GODOT_OPTS="$GODOT_OPTS --rendering-method gl_compatibility --rendering-driver opengl3"
-"$GAMEDIR/runtime/$runtime" $GODOT_OPTS --main-pack "gamedata/Songo5.pck"
+# The .pck's path is absolute: Godot opens it again for every file it loads, and
+# its directory scans change the working directory for a moment, so a thread
+# loading just then wouldn't find a relative one
+"$GAMEDIR/runtime/$runtime" $GODOT_OPTS --main-pack "$GAMEDIR/gamedata/Songo5.pck"
 
 # Cleanup
 

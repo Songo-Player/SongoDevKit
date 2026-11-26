@@ -6,7 +6,11 @@
 
 . /mnt/SDCARD/spruce/scripts/helperFunctions.sh
 
-set_smart
+# spruce sets its performance CPU mode to launch an app. Stay in it while Songo
+# boots and only then drop to smart. Does nothing if Songo has already exited,
+# so it can't override the CPU mode of whatever runs next.
+SMART_DELAY_SEC=8
+( sleep "$SMART_DELAY_SEC"; kill -0 "$$" 2>/dev/null && set_smart ) </dev/null >/dev/null 2>&1 &
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 GAMEDIR="$SCRIPT_DIR/songo5"
@@ -105,7 +109,10 @@ export SONGODOT_KMSDRM_ROTATION="270"
 # Compatibility on GLES3, which the sbc runtime's "opengl3" driver creates. Its
 # "opengl3_es" sets up no GL context and segfaults.
 GODOT_OPTS="$GODOT_OPTS --rendering-method gl_compatibility --rendering-driver opengl3"
-"$GAMEDIR/runtime/$runtime" $GODOT_OPTS --main-pack "gamedata/$pck_filename"
+# The .pck's path is absolute: Godot opens it again for every file it loads, and
+# its directory scans change the working directory for a moment, so a thread
+# loading just then wouldn't find a relative one
+"$GAMEDIR/runtime/$runtime" $GODOT_OPTS --main-pack "$GAMEDIR/gamedata/$pck_filename"
 
 # Cleanup
 

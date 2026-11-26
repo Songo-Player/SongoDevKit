@@ -122,3 +122,8 @@ The work copies take a few GB (each Songodot target keeps its own, since Godot r
 
 ## AI Usage Disclosure (3 out of 5 🤖)
 I'm not the brightest with setting up cross compilation tooling so I leaned on claude a good bit for this, namely in the docker setup and windows export
+
+## License
+SongoDevKit Copyright (C) 2026 Riley Cleary
+
+SongoDevKit is licensed under the GNU General Public License version 3. See [LICENSE.txt](LICENSE.txt). The repos in `repos/` and third-party tools (eg: `build_platforms/windows/tools/`) remain under their own licenses.

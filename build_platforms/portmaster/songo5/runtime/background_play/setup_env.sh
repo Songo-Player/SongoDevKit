@@ -9,7 +9,16 @@
 # suppression back on.
 #
 # Godot and the daemon both have the sound device open while Songo runs, so
-# this needs a sound server (PipeWire or PulseAudio) to share it.
+# this needs a sound server (PipeWire or PulseAudio) or ALSA's dmix to share it.
+
+# dArkOS on RK3326 deletes ~/.asoundrc (its dmix setup) when a port launches,
+# leaving the sound device to one program at a time. Put it back, as perfnorm
+# does after the port exits. Has to be done before Godot opens the device.
+if [ -f /usr/local/bin/perfmax ] && [ "$HOME" = /home/ark ] &&
+	[ ! -s /home/ark/.asoundrc ] && [ -s /home/ark/.asoundrcbak ]; then
+	cp -f /home/ark/.asoundrcbak /home/ark/.asoundrc &&
+		echo "Restored dArkOS's shared (dmix) audio config"
+fi
 
 # Tells Godot background playback is available, enabling "Quit with Music"
 SONGO_SBC_BG_PLAY="1"
@@ -35,15 +44,28 @@ fi
 # are when they exist
 SONGO_AUDIO_DEVICE=""
 if command -v aplay >/dev/null 2>&1; then
+	SONGO_ALSA_DEVICES="$(aplay -L 2>/dev/null)"
 	for DEVICE in pipewire pulse; do
-		if aplay -L 2>/dev/null | grep -qx "$DEVICE"; then
-			SONGO_AUDIO_DEVICE="$DEVICE"
-			break
-		fi
+		# A whole line of the list, as "grep -x" would match
+		case "
+${SONGO_ALSA_DEVICES}
+" in
+			*"
+${DEVICE}
+"*)
+				SONGO_AUDIO_DEVICE="$DEVICE"
+				break
+				;;
+		esac
 	done
+	unset SONGO_ALSA_DEVICES
 fi
-if ! pgrep -x pipewire >/dev/null 2>&1 && ! pgrep -x pulseaudio >/dev/null 2>&1; then
-	echo "WARNING: No sound server running, music and Songo's sounds may not play together"
+if ! pgrep -x 'pipewire|pulseaudio' >/dev/null 2>&1; then
+	if grep -qsE 'type[[:space:]]+dmix' "$HOME/.asoundrc" /etc/asound.conf; then
+		echo "No sound server, sharing the sound device through ALSA's dmix"
+	else
+		echo "WARNING: No sound server or dmix, music and Songo's sounds may not play together"
+	fi
 fi
 echo "Music player ALSA device: ${SONGO_AUDIO_DEVICE:-default}"
 

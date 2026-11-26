@@ -12,12 +12,15 @@
 #   LICENSE_FILE  Songo's license, shown by the installer
 #   STAGE         a scratch directory for the installer's files
 #   SETUP         the installer to write
+#   PROJECT_DIR, BGPLAYER_DIR, SONGODOT_DIR, SOURCES
+#                 for the licenses, see ../licenses/add_licenses.sh
 #   WINEPREFIX    a Wine prefix to keep between runs
 #
 # The installer (installer.nsi) installs, per user with no admin rights:
 #   Songo5.exe          the template, with Songo's icon and version info
 #   Songo5.pck          loaded from next to the .exe
 #   the engine DLL, LICENSE.txt, songo.ico and an uninstaller
+#   third_party/        everything's licenses
 # The .pck isn't embedded in the .exe: Godot embeds it after setting the
 # icon, which only works inside its own exporter.
 set -euo pipefail
@@ -47,6 +50,9 @@ mkdir -p "$STAGE" "$WINEPREFIX"
 cp -f "$PCK" "$STAGE/Songo5.pck"
 cp -f "$ENGINE_DLL" "$STAGE/"
 cp -f "$LICENSE_FILE" "$STAGE/LICENSE.txt"
+bash "$SCRIPT_DIR/../licenses/add_licenses.sh" "$STAGE/third_party" ../LICENSE.txt windows.md
+# The copyright file of the MinGW-w64 this is built with
+install -D -m 644 /usr/share/doc/mingw-w64-common/copyright "$STAGE/third_party/mingw-w64/copyright"
 
 echo ">> Making Songo5.exe from the template, with Songo's icon and version info ($VERSION)"
 # The sizes Godot's own export puts in the .ico

@@ -1,6 +1,6 @@
 ; Songo #5 Windows installer (NSIS 3). build_windows.sh compiles it with
 ; makensis in Docker, defining:
-;   SRC              folder with Songo5.exe, Songo5.pck, the engine DLL, LICENSE.txt
+;   SRC              folder with Songo5.exe, Songo5.pck, the engine DLL, LICENSE.txt, third_party
 ;   ICON             Songo's .ico
 ;   OUT_FILE         the installer to write
 ;   VERSION          eg: "v1.0.0 RC8"
@@ -62,6 +62,7 @@ Section "Install"
 	File "${SRC}\Songo5.pck"
 	File "${SRC}\${ENGINE_DLL}"
 	File "${SRC}\LICENSE.txt"
+	File /r "${SRC}\third_party"
 	File "/oname=songo.ico" "${ICON}"
 	WriteUninstaller "$INSTDIR\Uninstall.exe"
 
@@ -90,6 +91,7 @@ Section "Uninstall"
 	Delete "$INSTDIR\Songo5.pck"
 	Delete "$INSTDIR\${ENGINE_DLL}"
 	Delete "$INSTDIR\LICENSE.txt"
+	RMDir /r "$INSTDIR\third_party"
 	Delete "$INSTDIR\songo.ico"
 	Delete "$INSTDIR\Uninstall.exe"
 	RMDir "$INSTDIR"

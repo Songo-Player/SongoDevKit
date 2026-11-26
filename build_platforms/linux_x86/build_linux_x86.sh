@@ -9,9 +9,8 @@
 #   ENGINE_LIB    SongoBGPlayer libsongo_engine.linux.x86_64.so
 #   DAEMON        SongoBGPlayer songo_bgplayer.linux.x86_64
 #   LICENSE_FILE  Songo's license, shipped as LICENSE.txt
-#   BGPLAYER_DIR  SongoBGPlayer, for its THIRD_PARTY.md and licenses/ (FFmpeg, Mbed TLS)
-#   SONGODOT_DIR  Songodot, for Godot's LICENSE.txt and COPYRIGHT.txt (the
-#                 runtime is Godot, and COPYRIGHT.txt covers the libraries in it)
+#   BGPLAYER_DIR, SONGODOT_DIR, SOURCES
+#                 for the licenses, see ../licenses/add_licenses.sh
 #   ASSEMBLY      a scratch directory to assemble the release in
 #   OUT           the .tar.gz to write
 #   PRESET        optional, the export preset (default "Linux x86_64")
@@ -22,19 +21,15 @@
 #   libsongo_engine.linux.x86_64.so  next to the executable, where
 #   songo_bgplayer.linux.x86_64      SongoPlayerHarness looks first
 #   LICENSE.txt
-#   third_party/THIRD_PARTY.md       SongoBGPlayer's notices, whose licenses/
-#   third_party/licenses/ffmpeg/     paths resolve next to it
-#   third_party/licenses/mbedtls/
-#   third_party/licenses/godot/      Godot's LICENSE.txt and COPYRIGHT.txt
+#   third_party/                     everything's licenses (../licenses/add_licenses.sh)
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PRESET="${PRESET:-Linux x86_64}"
 : "${GODOT:?}" "${PROJECT_DIR:?}" "${TEMPLATE:?}" "${ENGINE_LIB:?}" "${DAEMON:?}" "${LICENSE_FILE:?}" "${ASSEMBLY:?}" "${OUT:?}"
-: "${BGPLAYER_DIR:?}" "${SONGODOT_DIR:?}"
+: "${BGPLAYER_DIR:?}" "${SONGODOT_DIR:?}" "${SOURCES:?}"
 
-for f in "$GODOT" "$TEMPLATE" "$ENGINE_LIB" "$DAEMON" "$LICENSE_FILE" \
-    "$BGPLAYER_DIR/THIRD_PARTY.md" "$BGPLAYER_DIR/licenses/ffmpeg/COPYING.LGPLv3" "$BGPLAYER_DIR/licenses/mbedtls/LICENSE" \
-    "$SONGODOT_DIR/LICENSE.txt" "$SONGODOT_DIR/COPYRIGHT.txt"; do
+for f in "$GODOT" "$TEMPLATE" "$ENGINE_LIB" "$DAEMON" "$LICENSE_FILE"; do
     [ -f "$f" ] || { echo "!! Missing $f" >&2; exit 1; }
 done
 
@@ -65,12 +60,8 @@ cp -f "$ENGINE_LIB" "$APP_DIR/libsongo_engine.linux.x86_64.so"
 cp -f "$DAEMON" "$APP_DIR/songo_bgplayer.linux.x86_64"
 cp -f "$LICENSE_FILE" "$APP_DIR/LICENSE.txt"
 
-echo ">> Adding third-party notices -> Songo5/third_party/"
 THIRD_PARTY="$APP_DIR/third_party"
-mkdir -p "$THIRD_PARTY/licenses/godot"
-cp -f "$BGPLAYER_DIR/THIRD_PARTY.md" "$THIRD_PARTY/"
-cp -rf "$BGPLAYER_DIR/licenses/ffmpeg" "$BGPLAYER_DIR/licenses/mbedtls" "$THIRD_PARTY/licenses/"
-cp -f "$SONGODOT_DIR/LICENSE.txt" "$SONGODOT_DIR/COPYRIGHT.txt" "$THIRD_PARTY/licenses/godot/"
+bash "$SCRIPT_DIR/../licenses/add_licenses.sh" "$THIRD_PARTY" ../LICENSE.txt
 find "$THIRD_PARTY" -type d -exec chmod 755 {} +
 find "$THIRD_PARTY" -type f -exec chmod 644 {} +
 

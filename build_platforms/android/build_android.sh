@@ -137,6 +137,11 @@ if grep -qE "libgdtaglib|libsongo_harness" <<< "$APK_FILES"; then
     exit 1
 fi
 
+for f in LICENSE.txt THIRD_PARTY.md SOURCES.txt taglib/COPYING.LGPL ffmpeg/COPYING.LGPLv3 mbedtls/LICENSE; do
+    grep -q "assets/third_party_licenses/$f" <<< "$APK_FILES" \
+        || { echo "!! third_party_licenses/$f missing from the APK" >&2; exit 1; }
+done
+
 echo ">> Checking background playback made it in"
 # The engine comes from the plugin AAR
 unzip -l "$OUT" lib/arm64-v8a/libsongo_engine.android.arm64.so > /dev/null \

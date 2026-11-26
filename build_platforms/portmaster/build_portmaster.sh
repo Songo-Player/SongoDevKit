@@ -9,6 +9,8 @@
 #   ENGINE_LIB   SongoBGPlayer libsongo_engine.linux.arm64.so
 #   DAEMON       SongoBGPlayer songo_bgplayer.linux.arm64
 #   CHAI_DIR     chai_retrofit, copied into the port
+#   BGPLAYER_DIR, SONGODOT_DIR, SOURCES
+#                for the licenses, see assemble_port.sh
 #   ASSEMBLY     a scratch directory to assemble the port in
 #   OUT          the zip to write
 #   PRESET       optional, the export preset (default "Linux")
@@ -17,13 +19,18 @@
 # zipped with the Songo5.sh launcher next to this script.
 set -euo pipefail
 
+# Packaged plugins (folder names, space-separated) PortMaster doesn't ship.
+# The spruce and Android builds still ship them.
+PORTMASTER_EXCLUDE_PLUGINS="ThemeDownloader"
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 : "${ASSEMBLY:?}" "${OUT:?}"
 
 LAUNCHER="$SCRIPT_DIR/Songo5.sh"
 rm -rf "$ASSEMBLY"
 mkdir -p "$ASSEMBLY"
-LAUNCHER="$LAUNCHER" PORT_DIR="$ASSEMBLY/songo5" bash "$SCRIPT_DIR/assemble_port.sh"
+LAUNCHER="$LAUNCHER" PORT_DIR="$ASSEMBLY/songo5" EXCLUDE_PLUGINS="$PORTMASTER_EXCLUDE_PLUGINS" \
+    bash "$SCRIPT_DIR/assemble_port.sh"
 cp -a "$LAUNCHER" "$ASSEMBLY/"
 
 echo ">> Zipping -> $OUT"
